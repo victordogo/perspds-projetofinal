@@ -18,3 +18,14 @@ ocupacao_hospitalar <- ocupacao_hospitalar |>
 
 readr::write_rds(ocupacao_hospitalar, 'data/ocupacao_hospitalar.rds')
 
+ocupacao_hospitalar_cumsum <- ocupacao_hospitalar |>
+  group_by(municipio) |>
+  mutate(
+    across(
+      .cols=ocupacaoSuspeitoCli:saidaConfirmadaAltas,
+      .fns=~cumsum(.x)
+    )
+  )
+
+readr::write_rds(ocupacao_hospitalar_cumsum,
+                 'data/ocupacao_hospitalar_cumsum.rds')
