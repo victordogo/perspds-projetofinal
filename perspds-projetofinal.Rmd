@@ -1,0 +1,223 @@
+---
+title: "Projeto Final de Perspectiva em Ciência de Dados"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    source_code: 'https://github.com/victordogo/perspds-projetofinal'
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+# Carregando pacotes
+
+library(shiny)
+library(flexdashboard)
+library(plotly)
+library(tidyverse)
+library(tippy)
+
+```
+
+```{r data}
+
+# Lendo dados
+
+df <- readr::read_rds('data/ocupacao_hospitalar.rds')
+
+df_cumsum <- readr::read_rds('data/ocupacao_hospitalar_cumsum.rds')
+
+# Definindo o nome das variaveis
+
+variaveis <- names(df[,3:14])
+
+```
+
+
+ {.sidebar data-width=350}
+===============================================================
+
+**Opções de Exibição:**
+
+```{r}
+
+# Escolhendo datas para os graficos
+
+with_tippy(
+  dateRangeInput('dias', 
+          label='Selecione as datas de início e de fim desejadas:',
+          start = '2021-01-01', end = '2021-12-31',
+          min='2021-01-01', max='2021-12-31',
+          language = 'pt-BR',format='dd-mm-yyyy',
+          separator = 'até'),
+  tooltip = "<span style='font-size:16px;'>O banco de dados diz respeito às ocorrências no ano de 2021.<span>",
+  allowHTML=TRUE
+)
+
+# Escolhendo cidades para serem comparadas
+
+with_tippy(
+  checkboxGroupInput('cidades',
+                   label = 'Selecione pelo menos uma cidade:',
+                   choices=c('São Paulo', 'Belo Horizonte',
+                             'Rio de Janeiro'),
+                   selected = c('São Paulo', 'Belo Horizonte',
+                             'Rio de Janeiro')),
+  tooltip = "<span style='font-size:16px;'>As cidades foram escolhidas por serem algumas das mais atingidas pela pandemia.<span>"
+)
+
+# Escolhendo variável do eixo x
+
+with_tippy(
+  selectInput('var_y',
+            label='Escolha a variável a ser comparada:',
+            choices=variaveis,
+            selected=variaveis[1]),
+  tooltip = "<span style='font-size:16px;'>Mais informações sobre cada variável podem ser vistas na aba 'Sobre'.<span>"
+)
+
+# Escolhendo se iremos analisar dados diarios ou acumulados
+
+with_tippy(
+  radioButtons('dia_acu',
+             label='Os dados serão analisados de maneira:',
+             choices=c('Diária','Acumulada'),
+             selected='Diária'),
+  tooltip = "<span style='font-size:16px;'>Dados diários são de ocorrências apenas daquele dia; dados acumulados são de ocorrência incluindo determinado dia e todos anteriores a ele.<span>"
+)
+
+
+```
+
+
+
+Análises
+================================================================
+
+Row
+------------------------------------------------------------------
+
+### Total de ocorrências no período {.value-box}
+
+```{r}
+
+# Numero de ocorrencias no periodo
+
+renderValueBox({
+  df |> 
+    filter(data>= input$dias[1] & data <= input$dias[2],
+           municipio %in% input$cidades) |> # Filtrando por selecoes
+    summarise(soma=sum(get(input$var_y))) |> 
+    summarise(soma=sum(soma)) |> 
+    as.double() |> 
+    valueBox(
+      icon='fa-area-chart',
+      color='primary'
+    )
+})
+
+```
+
+### Cidade com mais ocorrências no período {.value-box}
+
+```{r}
+
+# Cidades com mais ocorrencias no periodo
+
+renderValueBox({
+  df_cumsum |> 
+    filter(data>= input$dias[1] & data <= input$dias[2]) |> # Filtrando por selecoes
+    tail(3) |> 
+    arrange(desc(get(input$var_y))) |> 
+    head(1) |> 
+    select(municipio) |> 
+    as.character() |> 
+    valueBox(
+      icon='fa-map-pin',
+      color='primary'
+    )
+})
+
+```
+
+Row {data-width=250}
+-------------------------------------------------------------------
+
+### Comparação entre números absolutos da variável escolhida
+
+```{r}
+
+# Grafico de comparacao da variavel escolhida
+
+renderPlotly({
+  
+  dados <- NULL
+  
+  # Definindo se analisaremos dados acumulados ou nao
+  
+  if(input$dia_acu=='Acumulada'){
+    dados <- df_cumsum
+  } else {
+    dados <- df
+  }
+  
+  # Criando grafico com base em inputs do shiny
+  
+  graph_1 <- dados |> 
+  filter(data>= input$dias[1] & data <= input$dias[2],
+         municipio %in% input$cidades) |>
+  ggplot()+
+  aes(x=data,y=get(input$var_y))+
+  geom_line(aes(color=municipio))+
+  theme_minimal()+
+  labs(y=input$var_y)
+  
+  # Exibindo grafico
+  
+  ggplotly(graph_1)
+  
+})
+
+```
+
+
+Sobre
+================================================================
+
+**Descrição do Banco de Dados:**
+
+Registro de Ocupação Hospitalar da COVID-19 no ano de 2021 nas cidades de Belo Horizonte, Rio de Janeiro e São Paulo. Os dados são referentes a internações de casos suspeitos, confirmados, bem como óbitos e outras variáveis. O dataset original do datasus encontra-se [aqui](https://opendatasus.saude.gov.br/dataset/registro-de-ocupacao-hospitalar-covid-19) e o código utilizado para tratamento dos dados encontra-se [aqui](https://github.com/victordogo/perspds-projetofinal/blob/master/data-raw/ocupacao_hospitalar.R).
+
+As variáveis disponíveis são:
+
+* ocupacaoSuspeitoCli: atendimentos de pacientes com suspeita de COVID-19 no setor clínico;
+* ocupacaoSuspeitoUti: atendimentos de pacientes com suspeita de COVID-19 no setor de UTI;
+* ocupacaoConfirmadoCli: atendimentos de pacientes com diagnóstico confirmado de COVID-19 no setor clínico;
+* ocupacaoConfirmadoUti: atendimentos de pacientes com diagnóstico confirmado de COVID-19 no setor de UTI;
+* ocupacaoCovidUti: atendimentos de pacientes com diagnóstico e sintomas confirmados de COVID-19 no setor de UTI;
+* ocupacaoCovidCli: atendimentos de pacientes com diagnóstico e sintomas confirmados de COVID-19 no setor de clínico;
+* ocupacaoHospitalarUti: internações de pacientes com sintomas graves de COVID-19 no setor de UTI;
+* ocupacaoHospitalarCli: internações de pacientes com sintomas graves de COVID-19 no setor de clínico;
+* saidaSuspeitaObitos: número de pacientes que faleceram no hospital mas que possuíam apenas suspeita de COVID-19;
+* saidaSuspeitaAltas: número de pacientes que receberam alta do hospital mas que possuíam apenas suspeita de COVID-19;
+* saidaConfirmadaObitos: número de pacientes com diagnóstico confirmado de COVID-19 que faleceram no hospital;
+* saidaConfirmadaAltas: número de pacientes com diagnóstico confirmado de COVID-19 que receberam alta do hospital.
+
+
+**Perguntas de Interesse:**
+
+* Qual das cidades possuiu maior número de internações por suspeita de COVID-19 em dado período?
+* Qual das cidades possui maior número de internações por diagnóstico confirmado de COVID-19 em dado período?
+* Qual das cidades possui maior número de altas de pacientes em dado período?
+* Qual das cidades possui maior número de óbitos de pacientes em decorrência confirmada (ou não) da COVID-19 no hospital em dado período?
+
+
+**Repositório do dashboard shiny no GitHub:** [victordogo/perspds-projetofinal](https://github.com/victordogo/perspds-projetofinal)
+
+
+**Grupo:**
+
+* Thais Cristina Cardozo de Souza, RA: 770656;
+* Samuel Tremea, RA: 632090;
+* Victor Alves Dogo Martins, RA: 744878.
