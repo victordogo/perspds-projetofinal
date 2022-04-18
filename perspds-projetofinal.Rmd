@@ -71,7 +71,7 @@ with_tippy(
 
 with_tippy(
   selectInput('var_y',
-            label='Escolha a variável a ser comparada:',
+            label='Escolha a variável a ser analisada:',
             choices=variaveis,
             selected=variaveis[1]),
   tooltip = "<span style='font-size:16px;'>Mais informações sobre cada variável podem ser vistas na aba 'Sobre'.<span>"
@@ -208,9 +208,9 @@ As variáveis disponíveis são:
 **Perguntas de Interesse:**
 
 * Qual das cidades possuiu maior número de internações por suspeita de COVID-19 em dado período?
-* Qual das cidades possui maior número de internações por diagnóstico confirmado de COVID-19 em dado período?
-* Qual das cidades possui maior número de altas de pacientes em dado período?
-* Qual das cidades possui maior número de óbitos de pacientes em decorrência confirmada (ou não) da COVID-19 no hospital em dado período?
+* Qual das cidades possuiu maior número de internações por diagnóstico confirmado de COVID-19 em dado período?
+* Qual das cidades possuiu maior número de altas de pacientes em dado período?
+* Qual das cidades possuiu maior número de óbitos de pacientes em decorrência confirmada (ou não) da COVID-19 no hospital em dado período?
 
 
 **Repositório do dashboard shiny no GitHub:** [victordogo/perspds-projetofinal](https://github.com/victordogo/perspds-projetofinal)
